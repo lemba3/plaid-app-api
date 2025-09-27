@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 // Helper function to get user-friendly error messages
 function getDisplayMessage(errorCode: string): string {
@@ -30,6 +32,12 @@ const config = new Configuration({
 const client = new PlaidApi(config);
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { access_token, amount, buyerName, reason } = await req.json();
 
@@ -45,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (totalAvailableBalance < amount) {
       return NextResponse.json({
         error: 'Insufficient Funds',
-        message: `This verification requires ${amount.toFixed(2)}, but your combined available balance is ${totalAvailableBalance.toFixed(2)}`,
+        message: `This verification requires $${amount.toFixed(2)}, but your combined available balance is $${totalAvailableBalance.toFixed(2)}`,
         details: {
           requiredAmount: amount,
           availableBalance: totalAvailableBalance,
