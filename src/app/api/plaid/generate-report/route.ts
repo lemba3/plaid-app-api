@@ -32,11 +32,11 @@ const config = new Configuration({
 const client = new PlaidApi(config);
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  // const session = await getServerSession(authOptions)
 
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // if (!session) {
+  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // }
 
   try {
     const { access_token, amount, buyerName, reason } = await req.json();

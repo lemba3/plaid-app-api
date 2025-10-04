@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getUserFromRequest } from '@/lib/auth';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
 
@@ -17,9 +16,11 @@ const config = new Configuration({
 const client = new PlaidApi(config);
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = getUserFromRequest(req);
 
-  if (!session) {
+  console.log('exhange public token Authenticated user:', user);
+
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -36,15 +37,15 @@ export async function POST(req: NextRequest) {
 
     const { access_token } = response.data;
 
-    if (!session.user || !(session.user as any).id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Save the access_token to the database
     await prisma.plaidItem.create({
       data: {
         accessToken: access_token,
-        userId: (session.user as any).id,
+        user: {
+          connect: {
+            id: user.userId,
+          },
+        },
       },
     });
 

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user.password) {
-        return NextResponse.json({ error: 'User has no password set' }, { status: 500 });
+      return NextResponse.json({ error: 'User has no password set' }, { status: 500 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-        console.error('JWT_SECRET is not defined');
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      console.error('JWT_SECRET is not defined');
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
     const accessToken = jwt.sign(
