@@ -37,10 +37,12 @@ export async function POST(req: NextRequest) {
 
     let totalAvailableBalance = 0;
     let allAccounts: AccountBase[] = [];
+    const requestIds: string[] = [];
 
     for (const item of items) {
       try {
         const accountsResponse = await client.accountsGet({ access_token: item.accessToken });
+        requestIds.push(accountsResponse.data.request_id);
         allAccounts.push(...accountsResponse.data.accounts);
         totalAvailableBalance += accountsResponse.data.accounts.reduce(
           (total, acc) => total + (acc.balances.available || 0),
@@ -54,11 +56,21 @@ export async function POST(req: NextRequest) {
 
     const sufficient = totalAvailableBalance >= amount;
 
+    await prisma.report.create({
+      data: {
+        sufficient,
+        requestIds,
+        requestedAmount: amount,
+        userId: user.userId,
+      },
+    });
+
     return NextResponse.json({
       sufficient,
       totalBalance: totalAvailableBalance,
       requestedAmount: amount,
       currency: 'USD', // Assuming USD
+      requestIds,
       accounts: allAccounts.map(acc => ({
         name: acc.name,
         mask: acc.mask,
