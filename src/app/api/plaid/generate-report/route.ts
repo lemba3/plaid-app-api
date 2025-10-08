@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const sufficient = totalAvailableBalance >= amount;
 
-    await prisma.report.create({
+    const newReport = await prisma.report.create({
       data: {
         sufficient,
         requestIds,
@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
         mask: acc.mask,
         balance: acc.balances.available,
       })),
+      reportId: newReport.id,
+      generatedAt: newReport.createdAt,
     });
 
   } catch (error: any) {
