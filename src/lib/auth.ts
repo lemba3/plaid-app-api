@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import jwt from 'jsonwebtoken';
+import jwt, { TokenExpiredError } from 'jsonwebtoken';
 
 interface UserPayload {
   userId: string;
@@ -25,6 +25,9 @@ export function getUserFromRequest(req: NextRequest): UserPayload | null {
     return decoded;
   } catch (error) {
     console.error('JWT verification error:', error);
+    if (error instanceof TokenExpiredError) {
+      throw error;
+    }
     return null;
   }
 }

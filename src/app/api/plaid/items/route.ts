@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
+import { TokenExpiredError } from 'jsonwebtoken';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -16,13 +17,13 @@ const config = new Configuration({
 const client = new PlaidApi(config);
 
 export async function GET(req: NextRequest) {
-  const user = getUserFromRequest(req);
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const user = getUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const items = await prisma.plaidItem.findMany({
       where: { userId: user.userId },
     });
@@ -62,6 +63,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(itemDetails);
 
   } catch (error) {
+    if (error instanceof TokenExpiredError) {
+      return NextResponse.json({ error: 'Token expired' }, { status: 401 });
+    }
     console.error('Error fetching Plaid items:', error);
     return NextResponse.json({ error: 'Error fetching items' }, { status: 500 });
   }
