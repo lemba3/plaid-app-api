@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
           const institutionResponse = await client.institutionsGetById({
             institution_id: institutionId,
             country_codes: ['US' as CountryCode], // Adjust country codes as needed
+            options: { include_optional_metadata: true, include_status: true },
           });
 
           return {

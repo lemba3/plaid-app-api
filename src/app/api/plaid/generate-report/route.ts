@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { Configuration, PlaidApi, PlaidEnvironments, AccountBase } from 'plaid';
+import { Configuration, PlaidApi, PlaidEnvironments, AccountBase, CountryCode } from 'plaid';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     let totalAvailableBalance = 0;
     let allAccounts: AccountBase[] = [];
     const requestIds: string[] = [];
+    const bankNames = new Set<string>();
 
     for (const item of items) {
       try {
@@ -47,6 +48,19 @@ export async function POST(req: NextRequest) {
           (total, acc) => total + (acc.balances.available || 0),
           0
         );
+
+        const institutionId = accountsResponse.data.item.institution_id;
+        if (institutionId) {
+          try {
+            const institutionResponse = await client.institutionsGetById({
+              institution_id: institutionId,
+              country_codes: ['US' as CountryCode], // Adjust country codes as needed
+            });
+            bankNames.add(institutionResponse.data.institution.name);
+          } catch (instError) {
+            console.error(`Error fetching institution details for ID ${institutionId}:`, instError);
+          }
+        }
       } catch (error) {
         // Log the error but continue to the next item if one token is invalid
         console.error(`Error fetching accounts for item ${item.id}:`, error);
@@ -61,6 +75,7 @@ export async function POST(req: NextRequest) {
         requestIds,
         requestedAmount: amount,
         userId: userId,
+        bankNames: Array.from(bankNames),
       },
     });
 
@@ -70,6 +85,7 @@ export async function POST(req: NextRequest) {
       requestedAmount: amount,
       currency: 'USD', // Assuming USD
       requestIds,
+      bankNames: Array.from(bankNames),
       accounts: allAccounts.map(acc => ({
         name: acc.name,
         mask: acc.mask,

@@ -69,5 +69,5 @@ export async function middleware(request: NextRequest) {
 
 // Specify the paths for which this middleware should run
 export const config = {
-  matcher: ['/api/plaid/:path*', '/api/auth/refresh'],
+  matcher: ['/api/plaid/:path*', '/api/auth/refresh', '/api/report/:path*'],
 };

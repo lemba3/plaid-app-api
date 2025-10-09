@@ -38,6 +38,7 @@ model Report {
   sufficient      Boolean
   requestIds      String[]
   requestedAmount Float
+  bankNames       String[]
   userId          String
   user            User     @relation(fields: [userId], references: [id])
   createdAt       DateTime @default(now())
