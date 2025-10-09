@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserFromRequest } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { Configuration, PlaidApi, PlaidEnvironments, AccountBase } from 'plaid';
 
@@ -17,8 +16,8 @@ const client = new PlaidApi(config);
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) {
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const items = await prisma.plaidItem.findMany({
-      where: { userId: user.userId },
+      where: { userId: userId },
     });
 
     if (items.length === 0) {
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
         sufficient,
         requestIds,
         requestedAmount: amount,
-        userId: user.userId,
+        userId: userId,
       },
     });
 

@@ -1,38 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 import prisma from '@/lib/prisma';
-
-interface RefreshTokenPayload {
-  userId: string;
-  iat: number;
-  exp: number;
-}
 
 export async function POST(req: NextRequest) {
   try {
-    const { refreshToken } = await req.json();
+    const userId = req.headers.get('x-user-id');
 
-    if (!refreshToken) {
-      return NextResponse.json({ error: 'Refresh token is required' }, { status: 400 });
-    }
-
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET is not defined');
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
-
-    let payload: RefreshTokenPayload;
-
-    try {
-      payload = jwt.verify(refreshToken, jwtSecret) as RefreshTokenPayload;
-    } catch (error) {
-      // This catches errors like expired refresh token
-      return NextResponse.json({ error: 'Invalid or expired refresh token' }, { status: 401 });
+    if (!userId) {
+      // This should technically not be reached if middleware is set up correctly
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -40,11 +20,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate a new access token
-    const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, name: user.name },
-      jwtSecret,
-      { expiresIn: '1d' } // Keep consistent with your login endpoint
-    );
+    const secret = process.env.AUTH_SECRET;
+    if (!secret) {
+      console.error('AUTH_SECRET is not defined');
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+    const secretKey = new TextEncoder().encode(secret);
+    const alg = 'HS256';
+    const accessToken = await new jose.SignJWT({ userId: user.id, email: user.email, name: user.name })
+      .setProtectedHeader({ alg })
+      .setExpirationTime('1d')
+      .setIssuedAt()
+      .sign(secretKey);
 
     return NextResponse.json({ accessToken }, { status: 200 });
 

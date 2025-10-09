@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserFromRequest } from '@/lib/auth';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
 
@@ -16,13 +15,14 @@ const config = new Configuration({
 const client = new PlaidApi(config);
 
 export async function POST(req: NextRequest) {
-  const user = getUserFromRequest(req);
+  const userId = req.headers.get('x-user-id');
 
-  console.log('exhange public token Authenticated user:', user);
-
-  if (!user) {
+  // The middleware should have already handled unauthorized access, but as a safeguard
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  console.log('exhange public token Authenticated user ID:', userId);
 
   try {
     const { public_token } = await req.json();
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         accessToken: access_token,
         user: {
           connect: {
-            id: user.userId,
+            id: userId,
           },
         },
       },

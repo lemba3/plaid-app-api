@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,23 +29,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = process.env.AUTH_SECRET;
     if (!jwtSecret) {
-      console.error('JWT_SECRET is not defined');
+      console.error('AUTH_SECRET is not defined');
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
-    const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, name: user.name },
-      jwtSecret,
-      { expiresIn: '1d' }
-    );
+    const secretKey = new TextEncoder().encode(jwtSecret);
+    const alg = 'HS256';
 
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      jwtSecret,
-      { expiresIn: '7d' }
-    );
+    const accessToken = await new jose.SignJWT({ userId: user.id, email: user.email, name: user.name })
+      .setProtectedHeader({ alg })
+      .setExpirationTime('1d')
+      .setIssuedAt()
+      .sign(secretKey);
+
+    const refreshToken = await new jose.SignJWT({ userId: user.id })
+      .setProtectedHeader({ alg })
+      .setExpirationTime('7d')
+      .setIssuedAt()
+      .sign(secretKey);
 
     const { password: _, ...userWithoutPassword } = user;
 
