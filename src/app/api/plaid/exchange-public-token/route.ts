@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
+import { encrypt } from '@/lib/encryption';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -37,10 +38,13 @@ export async function POST(req: NextRequest) {
 
     const { access_token } = response.data;
 
-    // Save the access_token to the database
+    // Encrypt the access_token before saving it to the database
+    const encryptedAccessToken = encrypt(access_token);
+
+    // Save the encrypted access_token to the database
     await prisma.plaidItem.create({
       data: {
-        accessToken: access_token,
+        accessToken: encryptedAccessToken,
         user: {
           connect: {
             id: userId,

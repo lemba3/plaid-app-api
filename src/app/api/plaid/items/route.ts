@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
+import { decrypt } from '@/lib/encryption';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest) {
     const itemDetails = await Promise.all(
       items.map(async (item) => {
         try {
-          const itemResponse = await client.itemGet({ access_token: item.accessToken });
+          const decryptedAccessToken = decrypt(item.accessToken);
+          const itemResponse = await client.itemGet({ access_token: decryptedAccessToken });
           const institutionId = itemResponse.data.item.institution_id;
 
           if (!institutionId) {

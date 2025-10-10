@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Configuration, PlaidApi, PlaidEnvironments, AccountBase, CountryCode } from 'plaid';
+import { decrypt } from '@/lib/encryption';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest) {
 
     for (const item of items) {
       try {
-        const accountsResponse = await client.accountsGet({ access_token: item.accessToken });
+        const decryptedAccessToken = decrypt(item.accessToken);
+        const accountsResponse = await client.accountsGet({ access_token: decryptedAccessToken });
         requestIds.push(accountsResponse.data.request_id);
         allAccounts.push(...accountsResponse.data.accounts);
         totalAvailableBalance += accountsResponse.data.accounts.reduce(
