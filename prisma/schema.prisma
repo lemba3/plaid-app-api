@@ -18,6 +18,7 @@ model User {
   email     String      @unique
   name      String?
   password  String
+  roles     String[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   items     PlaidItem[]

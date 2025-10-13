@@ -8,13 +8,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     const { id } = params;
 
     const report = await prisma.report.findUnique({
-      where: {
-        id: id,
-        // userId: userId, // Ensure the report belongs to the authenticated user
-      },
+      where: { id: id },
       include: {
         user: {
           select: { name: true }
@@ -24,6 +30,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     if (!report) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    }
+
+    const isAdmin = user.roles.includes('admin');
+    if (!isAdmin && report.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Extract and format the needed parameters

@@ -10,6 +10,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
+    }
+
     const hashedPassword = await hash(password, 10);
 
     const user = await prisma.user.create({
@@ -17,6 +25,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         name,
+        roles: ['customer'],
       },
     });
 

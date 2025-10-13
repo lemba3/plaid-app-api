@@ -8,6 +8,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const isAdmin = user.roles.includes('admin');
+    const whereClause = isAdmin ? {} : { userId };
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
@@ -16,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const [reports, total] = await prisma.$transaction([
       prisma.report.findMany({
-        where: { userId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
@@ -27,7 +39,7 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.report.count({
-        where: { userId },
+        where: whereClause,
       }),
     ]);
 
