@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import prisma from '@/lib/prisma';
 import { encrypt } from '@/lib/encryption';
+import { pusher } from '@/lib/pusher';
 
 const config = new Configuration({
   basePath: PlaidEnvironments[process.env.PLAID_ENV as keyof typeof PlaidEnvironments] || PlaidEnvironments.sandbox,
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const userId = req.nextUrl.searchParams.get('userId'); // Extract userId from query params
 
-  console.log('Plaid Webhook Body:', body); // Log the entire body
+  // console.log('Plaid Webhook Body:', body); // Log the entire body
 
   // TODO: Verify the webhook signature to ensure the request is from Plaid
 
@@ -75,6 +76,11 @@ export async function POST(req: NextRequest) {
           },
         });
         console.log(`Access token saved for item: ${item_id} and user: ${userId}`);
+        // Trigger Pusher event
+        console.log('Triggering Pusher event for item-added');
+        await pusher.trigger(`user-${userId}`, 'item-added', {
+          message: 'A new bank item has been added. Please refresh your UI.',
+        });
       }
 
     } catch (error: any) {

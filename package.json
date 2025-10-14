@@ -20,6 +20,7 @@
     "next-auth": "^4.24.11",
     "plaid": "^38.1.0",
     "prisma": "^6.16.2",
+    "pusher": "^5.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-plaid-link": "^4.1.1",
