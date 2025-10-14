@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
   console.log('Authenticated user ID:', userId);
 
   try {
+    const webhookUrl = `${process.env.PLAID_WEBHOOK_BASE_URL}/api/plaid/webhook?userId=${userId}`;
+    console.log('Plaid Webhook URL being sent:', webhookUrl); // Add this line
+
     const response = await client.linkTokenCreate({
       user: { client_user_id: userId },
       client_name: userName || 'AppName',
@@ -32,8 +35,15 @@ export async function POST(req: NextRequest) {
       country_codes: [CountryCode.Us],
       language: 'en',
       android_package_name: 'com.purui.app',
+      webhook: webhookUrl,
+      hosted_link: {
+        completion_redirect_uri: 'purui://plaid-redirect',
+      },
     });
-    return NextResponse.json({ link_token: response.data.link_token });
+    return NextResponse.json({
+      link_token: response.data.link_token,
+      hosted_link_url: response.data.hosted_link_url,
+    });
   } catch (error) {
     console.error('Plaid link token error:', error);
     return NextResponse.json({ error: 'Error generating link token' }, { status: 500 });

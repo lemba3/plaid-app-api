@@ -27,6 +27,7 @@ model User {
 
 model PlaidItem {
   id          String   @id @default(cuid())
+  itemId      String   @unique // Add this line
   accessToken String
   userId      String
   user        User     @relation(fields: [userId], references: [id])

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const report = await prisma.report.findUnique({
       where: { id: id },

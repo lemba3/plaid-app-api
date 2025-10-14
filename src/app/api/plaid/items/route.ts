@@ -33,6 +33,16 @@ export async function GET(req: NextRequest) {
           const decryptedAccessToken = decrypt(item.accessToken);
           const itemResponse = await client.itemGet({ access_token: decryptedAccessToken });
           const institutionId = itemResponse.data.item.institution_id;
+          // const authResponse = await client.authGet({
+          //   access_token: decryptedAccessToken,
+          // });
+          // const accounts = authResponse.data.accounts.map((acc) => ({
+          //   name: acc.name,
+          //   official_name: acc.official_name,
+          //   mask: acc.mask, // e.g., "1234"
+          //   subtype: acc.subtype,
+          //   account_id: acc.account_id,
+          // }));
 
           if (!institutionId) {
             return {
