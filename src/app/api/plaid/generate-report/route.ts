@@ -22,17 +22,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { amount } = await req.json();
+    const body = await req.json();
+    const { amount, itemId } = body;
+
     if (typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json({ error: 'A valid positive amount is required' }, { status: 400 });
     }
+    if (!itemId) {
+      return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
+    }
 
-    const items = await prisma.plaidItem.findMany({
-      where: { userId: userId },
+    const plaidItem = await prisma.plaidItem.findFirst({
+      where: {
+        id: itemId,
+        userId: userId // Ensure the item belongs to the user
+      },
     });
 
-    if (items.length === 0) {
-      return NextResponse.json({ error: 'No bank accounts connected' }, { status: 400 });
+    if (!plaidItem) {
+      return NextResponse.json({ error: 'Bank account not found or unauthorized' }, { status: 404 });
     }
 
     let totalAvailableBalance = 0;
@@ -40,33 +48,35 @@ export async function POST(req: NextRequest) {
     const requestIds: string[] = [];
     const bankNames = new Set<string>();
 
-    for (const item of items) {
-      try {
-        const decryptedAccessToken = decrypt(item.accessToken);
-        const accountsResponse = await client.accountsGet({ access_token: decryptedAccessToken });
-        requestIds.push(accountsResponse.data.request_id);
-        allAccounts.push(...accountsResponse.data.accounts);
-        totalAvailableBalance += accountsResponse.data.accounts.reduce(
-          (total, acc) => total + (acc.balances.available || 0),
-          0
-        );
+    try {
+      const decryptedAccessToken = decrypt(plaidItem.accessToken);
+      const accountsResponse = await client.accountsGet({ access_token: decryptedAccessToken });
+      requestIds.push(accountsResponse.data.request_id);
+      allAccounts = accountsResponse.data.accounts;
+      totalAvailableBalance = accountsResponse.data.accounts.reduce(
+        (total, acc) => total + (acc.balances.available || 0),
+        0
+      );
 
-        const institutionId = accountsResponse.data.item.institution_id;
-        if (institutionId) {
-          try {
-            const institutionResponse = await client.institutionsGetById({
-              institution_id: institutionId,
-              country_codes: ['US' as CountryCode], // Adjust country codes as needed
-            });
-            bankNames.add(institutionResponse.data.institution.name);
-          } catch (instError) {
-            console.error(`Error fetching institution details for ID ${institutionId}:`, instError);
-          }
+      const institutionId = accountsResponse.data.item.institution_id;
+      if (institutionId) {
+        try {
+          const institutionResponse = await client.institutionsGetById({
+            institution_id: institutionId,
+            country_codes: ['US' as CountryCode],
+          });
+          bankNames.add(institutionResponse.data.institution.name);
+        } catch (instError) {
+          console.error(`Error fetching institution details for ID ${institutionId}:`, instError);
+          bankNames.add('Unknown Bank'); // Fallback name
         }
-      } catch (error) {
-        // Log the error but continue to the next item if one token is invalid
-        console.error(`Error fetching accounts for item ${item.id}:`, error);
       }
+    } catch (error) {
+      console.error(`Error fetching accounts for item ${plaidItem.id}:`, error);
+      return NextResponse.json({
+        error: 'Failed to fetch account information',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
     }
 
     const sufficient = totalAvailableBalance >= amount;
@@ -81,20 +91,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    const responseData = {
       sufficient,
       totalBalance: totalAvailableBalance,
       requestedAmount: amount,
-      currency: 'USD', // Assuming USD
+      currency: 'USD',
       requestIds,
-      bankNames: Array.from(bankNames),
+      bankNames: Array.from(bankNames), // Now returning array of bank names
       accounts: allAccounts.map(acc => ({
         name: acc.name,
         mask: acc.mask,
         balance: acc.balances.available,
+        type: acc.type,
+        subtype: acc.subtype,
       })),
       reportId: newReport.id,
       generatedAt: newReport.createdAt,
+    };
+
+    // Use Response instead of NextResponse
+    return new Response(JSON.stringify(responseData), {
+      headers: {
+        'content-type': 'application/json',
+      },
     });
 
   } catch (error: any) {

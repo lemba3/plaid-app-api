@@ -72,7 +72,7 @@ export const config = {
   matcher: [
     '/api/plaid/create-link-token',
     '/api/plaid/exchange-public-token',
-    '/api/plaid/generate-report/:path*',
+    '/api/plaid/generate-report',
     '/api/plaid/items',
     '/api/auth/refresh',
     '/api/report/:path*',

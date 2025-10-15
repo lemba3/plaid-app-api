@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
           if (!institutionId) {
             return {
-              itemId: item.id,
+              itemId: item.id, // Use database id for frontend reference
               institution: { name: 'Institution not found' },
               accounts: [],
             };
