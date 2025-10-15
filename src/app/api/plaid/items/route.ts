@@ -33,21 +33,21 @@ export async function GET(req: NextRequest) {
           const decryptedAccessToken = decrypt(item.accessToken);
           const itemResponse = await client.itemGet({ access_token: decryptedAccessToken });
           const institutionId = itemResponse.data.item.institution_id;
-          // const authResponse = await client.authGet({
-          //   access_token: decryptedAccessToken,
-          // });
-          // const accounts = authResponse.data.accounts.map((acc) => ({
-          //   name: acc.name,
-          //   official_name: acc.official_name,
-          //   mask: acc.mask, // e.g., "1234"
-          //   subtype: acc.subtype,
-          //   account_id: acc.account_id,
-          // }));
+          const authResponse = await client.authGet({
+            access_token: decryptedAccessToken,
+          });
+          const accounts = authResponse.data.accounts.map((acc) => ({
+            name: acc.name,
+            mask: acc.mask,
+            subtype: acc.subtype,
+            account_id: acc.account_id,
+          }));
 
           if (!institutionId) {
             return {
               itemId: item.id,
               institution: { name: 'Institution not found' },
+              accounts: [],
             };
           }
 
@@ -60,6 +60,8 @@ export async function GET(req: NextRequest) {
           return {
             itemId: item.id,
             institution: institutionResponse.data.institution,
+            accounts,
+            last_sync: item.updatedAt,
           };
         } catch (error) {
           console.error(`Error fetching details for item ${item.id}:`, error);

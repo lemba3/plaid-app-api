@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       android_package_name: 'com.purui.app',
       webhook: webhookUrl,
       hosted_link: {
-        completion_redirect_uri: 'purui://plaid-redirect',
+        completion_redirect_uri: 'purui://(tabs)',
       },
     });
     return NextResponse.json({
