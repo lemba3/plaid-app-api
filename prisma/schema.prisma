@@ -22,27 +22,42 @@ model User {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   items     PlaidItem[]
-  reports   Report[]
 }
 
 model PlaidItem {
-  id          String   @id @default(cuid())
-  itemId      String   @unique // Add this line
+  id          String    @id @default(cuid())
+  itemId      String    @unique
   accessToken String
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  accounts    Account[]
+  reports     Report[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Account {
+  id            String    @id @default(cuid())
+  plaidAccountId String    @unique
+  name          String
+  maskedNumber  String
+  type          String
+  subtype       String
+  currency      String
+  bankName      String
+  plaidItemId   String
+  plaidItem     PlaidItem @relation(fields: [plaidItemId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Report {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   sufficient      Boolean
   requestIds      String[]
   requestedAmount Float
-  bankNames       String[]
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  plaidItemId     String
+  plaidItem       PlaidItem @relation(fields: [plaidItemId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

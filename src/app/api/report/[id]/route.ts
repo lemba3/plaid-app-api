@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+type Context = {
+  params: Promise<{ id: string }> | { id: string }
+}
+
+export async function GET(
+  req: NextRequest,
+  context: Context
+) {
   try {
     const userId = req.headers.get('x-user-id');
     if (!userId) {
@@ -17,13 +24,23 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { id } = await params;
+    const params = await context.params;
+    const { id } = params;
 
     const report = await prisma.report.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
-        user: {
-          select: { name: true }
+        plaidItem: {
+          include: {
+            user: {
+              select: { name: true, id: true }
+            },
+            accounts: {
+              select: {
+                bankName: true
+              }
+            }
+          }
         }
       }
     });
@@ -33,7 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     const isAdmin = user.roles.includes('admin');
-    if (!isAdmin && report.userId !== userId) {
+    if (!isAdmin && report.plaidItem.user.id !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -41,10 +58,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const responseData = {
       sufficient: report.sufficient,
       requestedAmount: report.requestedAmount,
-      bankNames: report.bankNames,
+      bankNames: [...new Set(report.plaidItem.accounts.map(acc => acc.bankName))],
       reportId: report.id,
       generatedAt: report.createdAt.toISOString(), // Convert Date to ISO string
-      userName: report.user.name || 'User', // Fallback to 'User' if name is not available
+      userName: report.plaidItem.user.name || 'User', // Fallback to 'User' if name is not available
     };
 
     return NextResponse.json(responseData);

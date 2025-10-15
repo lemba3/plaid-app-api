@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+import { Configuration, PlaidApi, PlaidEnvironments, CountryCode } from 'plaid';
 import prisma from '@/lib/prisma';
-import { encrypt } from '@/lib/encryption';
+import { decrypt, encrypt } from '@/lib/encryption';
 import { pusher } from '@/lib/pusher';
 
 const config = new Configuration({
@@ -76,15 +76,69 @@ export async function POST(req: NextRequest) {
           },
         });
         console.log(`Access token saved for item: ${item_id} and user: ${userId}`);
-        // Trigger Pusher event
-        console.log('Triggering Pusher event for item-added');
-        await pusher.trigger(`user-${userId}`, 'item-added', {
-          message: 'A new bank item has been added. Please refresh your UI.',
-        });
+
       }
 
     } catch (error: any) {
       console.error('Error exchanging public token from webhook:', error.response?.data || error.message);
+    }
+  }
+
+  if (body.webhook_type === 'TRANSACTIONS') {
+    const { webhook_code, item_id } = body;
+
+    if (webhook_code === 'INITIAL_UPDATE' || webhook_code === 'HISTORICAL_UPDATE') {
+      try {
+        const plaidItem = await prisma.plaidItem.findUnique({
+          where: { itemId: item_id },
+        });
+
+        if (plaidItem) {
+          const decryptedAccessToken = decrypt(plaidItem.accessToken);
+          const accountsResponse = await client.accountsGet({ access_token: decryptedAccessToken });
+          const accounts = accountsResponse.data.accounts;
+
+          const institutionId = accountsResponse.data.item.institution_id;
+          let bankName = 'Unknown Bank';
+          if (institutionId) {
+            try {
+              const institutionResponse = await client.institutionsGetById({
+                institution_id: institutionId,
+                country_codes: ['US' as CountryCode],
+              });
+              bankName = institutionResponse.data.institution.name;
+            } catch (instError) {
+              console.error(`Error fetching institution details for ID ${institutionId}:`, instError);
+            }
+          }
+
+          const accountData = accounts.map(acc => ({
+            plaidAccountId: acc.account_id,
+            name: acc.name,
+            maskedNumber: acc.mask || '',
+            type: acc.type,
+            subtype: acc.subtype || '',
+            currency: acc.balances.iso_currency_code || '',
+            bankName: bankName,
+            plaidItemId: plaidItem.id,
+          }));
+
+          await prisma.account.createMany({
+            data: accountData,
+            skipDuplicates: true,
+          });
+
+          console.log(`Successfully created/updated accounts for item: ${item_id}`);
+
+          // Trigger Pusher event after accounts are created/updated
+          console.log('Triggering Pusher event for item-added');
+          await pusher.trigger(`user-${userId}`, 'item-added', {
+            message: 'A new bank item has been added. Please refresh your UI.',
+          });
+        }
+      } catch (error) {
+        console.error(`Error handling transactions update for item ${item_id}:`, error);
+      }
     }
   }
 

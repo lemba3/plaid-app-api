@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
       const accountsResponse = await client.accountsGet({ access_token: decryptedAccessToken });
       requestIds.push(accountsResponse.data.request_id);
       allAccounts = accountsResponse.data.accounts;
-      totalAvailableBalance = accountsResponse.data.accounts.reduce(
+      const depositoryAccounts = allAccounts.filter(acc => acc.type === 'depository');
+      totalAvailableBalance = depositoryAccounts.reduce(
         (total, acc) => total + (acc.balances.available || 0),
         0
       );
@@ -86,8 +87,11 @@ export async function POST(req: NextRequest) {
         sufficient,
         requestIds,
         requestedAmount: amount,
-        userId: userId,
-        bankNames: Array.from(bankNames),
+        plaidItem: {
+          connect: {
+            id: itemId,
+          }
+        }
       },
     });
 

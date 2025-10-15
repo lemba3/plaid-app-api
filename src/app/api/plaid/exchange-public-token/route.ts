@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       public_token,
     });
 
-    const { access_token } = response.data;
+    const { access_token, item_id } = response.data;
 
     // Encrypt the access_token before saving it to the database
     const encryptedAccessToken = encrypt(access_token);
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     // Save the encrypted access_token to the database
     await prisma.plaidItem.create({
       data: {
+        itemId: item_id,
         accessToken: encryptedAccessToken,
         user: {
           connect: {

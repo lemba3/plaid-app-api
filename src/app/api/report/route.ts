@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     const isAdmin = user.roles.includes('admin');
-    const whereClause = isAdmin ? {} : { userId };
+    const whereClause = isAdmin ? {} : { plaidItem: { userId: userId } };
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -33,8 +33,12 @@ export async function GET(req: NextRequest) {
         skip,
         take: pageSize,
         include: {
-          user: {
-            select: { id: true, email: true, name: true }
+          plaidItem: {
+            include: {
+              user: {
+                select: { id: true, email: true, name: true }
+              }
+            }
           }
         },
       }),
