@@ -37,6 +37,12 @@ export async function GET(
             },
             accounts: {
               select: {
+                plaidAccountId: true,
+                name: true,
+                maskedNumber: true,
+                type: true,
+                subtype: true,
+                currency: true,
                 bankName: true
               }
             }
@@ -62,6 +68,7 @@ export async function GET(
       reportId: report.id,
       generatedAt: report.createdAt.toISOString(), // Convert Date to ISO string
       userName: report.plaidItem.user.name || 'User', // Fallback to 'User' if name is not available
+      accounts: report.plaidItem.accounts, // Add this
     };
 
     return NextResponse.json(responseData);

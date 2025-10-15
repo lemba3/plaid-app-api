@@ -37,6 +37,9 @@ export async function GET(req: NextRequest) {
             include: {
               user: {
                 select: { id: true, email: true, name: true }
+              },
+              accounts: {
+                select: { bankName: true }
               }
             }
           }

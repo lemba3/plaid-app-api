@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const plaidItem = await prisma.plaidItem.findFirst({
       where: {
-        id: itemId,
+        itemId: itemId,
         userId: userId // Ensure the item belongs to the user
       },
     });
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         requestedAmount: amount,
         plaidItem: {
           connect: {
-            id: itemId,
+            itemId: itemId, // Connect by Plaid Item ID
           }
         }
       },
@@ -103,11 +103,13 @@ export async function POST(req: NextRequest) {
       requestIds,
       bankNames: Array.from(bankNames), // Now returning array of bank names
       accounts: allAccounts.map(acc => ({
+        plaidAccountId: acc.account_id,
         name: acc.name,
-        mask: acc.mask,
+        maskedNumber: acc.mask,
         balance: acc.balances.available,
         type: acc.type,
         subtype: acc.subtype,
+        bankName: bankNames.size === 1 ? Array.from(bankNames)[0] : 'Multiple Banks', // Simplified bank name
       })),
       reportId: newReport.id,
       generatedAt: newReport.createdAt,
