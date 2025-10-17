@@ -22,6 +22,8 @@ model User {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   items     PlaidItem[]
+  passwordResetToken String? @unique
+  passwordResetExpires DateTime?
 }
 
 model PlaidItem {
