@@ -38,9 +38,6 @@ export async function GET(req: NextRequest) {
               user: {
                 select: { id: true, email: true, name: true }
               },
-              accounts: {
-                select: { bankName: true }
-              }
             }
           }
         },
@@ -50,8 +47,15 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // Manually add bankNames to each report for consistency
+    const reportsWithDetails = reports.map(report => ({
+      ...report,
+      bankNames: [], // This can be enhanced later if needed
+      userName: report.plaidItem.user.name,
+    }));
+
     return NextResponse.json({
-      reports,
+      reports: reportsWithDetails,
       pagination: {
         total,
         page,

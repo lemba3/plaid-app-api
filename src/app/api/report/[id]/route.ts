@@ -64,11 +64,17 @@ export async function GET(
     const responseData = {
       sufficient: report.sufficient,
       requestedAmount: report.requestedAmount,
-      bankNames: [...new Set(report.plaidItem.accounts.map(acc => acc.bankName))],
       reportId: report.id,
-      generatedAt: report.createdAt.toISOString(), // Convert Date to ISO string
-      userName: report.plaidItem.user.name || 'User', // Fallback to 'User' if name is not available
-      accounts: report.plaidItem.accounts, // Add this
+      generatedAt: report.createdAt.toISOString(),
+      userName: report.plaidItem.user.name || 'User',
+      // New fields
+      fullName: report.fullName,
+      bankAccountName: report.bankAccountName,
+      purposeOfVerification: report.purposeOfVerification,
+      // Filter to show only the verified account
+      accounts: report.plaidItem.accounts.filter(acc => acc.plaidAccountId === report.accountId),
+      // Keep bankNames for compatibility, though it will be a single name
+      bankNames: [...new Set(report.plaidItem.accounts.filter(acc => acc.plaidAccountId === report.accountId).map(acc => acc.bankName))],
     };
 
     return NextResponse.json(responseData);

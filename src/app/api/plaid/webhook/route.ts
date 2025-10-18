@@ -123,18 +123,20 @@ export async function POST(req: NextRequest) {
             plaidItemId: plaidItem.id,
           }));
 
-          await prisma.account.createMany({
+          const result = await prisma.account.createMany({
             data: accountData,
             skipDuplicates: true,
           });
 
           console.log(`Successfully created/updated accounts for item: ${item_id}`);
 
-          // Trigger Pusher event after accounts are created/updated
-          console.log('Triggering Pusher event for item-added');
-          await pusher.trigger(`user-${userId}`, 'item-added', {
-            message: 'A new bank item has been added. Please refresh your UI.',
-          });
+          // Only trigger Pusher event if new accounts were actually created
+          if (result.count > 0) {
+            console.log('Triggering Pusher event for item-added');
+            await pusher.trigger(`user-${userId}`, 'item-added', {
+              message: 'A new bank item has been added. Please refresh your UI.',
+            });
+          }
         }
       } catch (error) {
         console.error(`Error handling transactions update for item ${item_id}:`, error);

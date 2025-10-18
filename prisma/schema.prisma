@@ -39,27 +39,36 @@ model PlaidItem {
 }
 
 model Account {
-  id            String    @id @default(cuid())
+  id             String    @id @default(cuid())
   plaidAccountId String    @unique
-  name          String
-  maskedNumber  String
-  type          String
-  subtype       String
-  currency      String
-  bankName      String
-  plaidItemId   String
-  plaidItem     PlaidItem @relation(fields: [plaidItemId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  name           String
+  maskedNumber   String
+  type           String
+  subtype        String
+  currency       String
+  bankName       String
+  plaidItemId    String
+  plaidItem      PlaidItem @relation(fields: [plaidItemId], references: [id])
+  reports        Report[] // Relation to Report
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Report {
-  id              String    @id @default(cuid())
-  sufficient      Boolean
-  requestIds      String[]
-  requestedAmount Float
-  plaidItemId     String
-  plaidItem       PlaidItem @relation(fields: [plaidItemId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  sufficient              Boolean
+  requestIds              String[]
+  requestedAmount         Float
+  fullName                String?
+  bankAccountName         String?
+  purposeOfVerification   String?
+  plaidItemId             String
+  plaidItem               PlaidItem @relation(fields: [plaidItemId], references: [id])
+  
+  // Relation to specific account
+  account                 Account?  @relation(fields: [accountId], references: [id])
+  accountId               String?
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 }
