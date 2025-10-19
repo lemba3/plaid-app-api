@@ -76,5 +76,6 @@ export const config = {
     '/api/plaid/items',
     '/api/auth/refresh',
     '/api/report/:path*',
+    '/api/users/me',
   ],
 };
