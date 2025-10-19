@@ -67,6 +67,7 @@ export async function GET(
       reportId: report.id,
       generatedAt: report.createdAt.toISOString(),
       userName: report.plaidItem.user.name || 'User',
+      requestId: report.requestIds[0] || '',
       // New fields
       fullName: report.fullName,
       bankAccountName: report.bankAccountName,
