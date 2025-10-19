@@ -40,7 +40,9 @@ export async function GET(req: NextRequest) {
               },
               accounts: {
                 select: {
-                  bankName: true
+                  id: true,
+                  bankName: true,
+                  subtype: true,
                 }
               }
             }
