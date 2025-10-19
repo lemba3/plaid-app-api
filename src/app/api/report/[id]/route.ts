@@ -72,7 +72,7 @@ export async function GET(
       bankAccountName: report.bankAccountName,
       purposeOfVerification: report.purposeOfVerification,
       // Filter to show only the verified account
-      accounts: report.plaidItem.accounts.filter(acc => acc.plaidAccountId === report.accountId),
+      accounts: report.plaidItem.accounts,
       // Keep bankNames for compatibility, though it will be a single name
       bankNames: [...new Set(report.plaidItem.accounts.filter(acc => acc.plaidAccountId === report.accountId).map(acc => acc.bankName))],
     };
