@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid ID token' }, { status: 401 });
     }
 
-    const { email, name } = payload;
+    const { email, name, sub: googleUserId } = payload;
 
     // Find or create the user in the database
     let user = await prisma.user.findUnique({
@@ -41,7 +41,14 @@ export async function POST(req: NextRequest) {
           email,
           name: name || 'User',
           roles: ['user'], // Default role
+          googleUserId: googleUserId, // Store Google's unique user ID
         },
+      });
+    } else if (!user.googleUserId) {
+      // If user exists but doesn't have googleUserId, link it
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { googleUserId: googleUserId },
       });
     }
 

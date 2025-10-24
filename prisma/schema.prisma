@@ -24,6 +24,8 @@ model User {
   items     PlaidItem[]
   passwordResetToken String? @unique
   passwordResetExpires DateTime?
+  appleUserId String? @unique
+  googleUserId String? @unique
 }
 
 model PlaidItem {
