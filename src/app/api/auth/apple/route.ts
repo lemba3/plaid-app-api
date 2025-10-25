@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import * as jose from 'jose';
-import { jwtVerify, createRemoteJWKSet, decodeJwt } from 'jose';
+import { jwtVerify, createRemoteJWKSet, decodeProtectedHeader } from 'jose';
 
 const APPLE_JWKS_URI = 'https://appleid.apple.com/auth/keys';
 const APPLE_ISSUER = 'https://appleid.apple.com';
@@ -35,7 +35,7 @@ async function verifyAppleIdToken(
   }
 
   try {
-    const decodedHeader = decodeJwt(idToken);
+    const decodedHeader = decodeProtectedHeader(idToken);
     if (!decodedHeader.kid) {
       throw new Error('Apple ID token header is missing "kid".');
     }
@@ -71,35 +71,50 @@ export async function POST(req: NextRequest) {
 
     const appleIdTokenPayload = await verifyAppleIdToken(idToken, appleClientId);
 
-    if (!appleIdTokenPayload || !appleIdTokenPayload.email) {
-      return NextResponse.json({ error: 'Invalid ID token or missing email' }, { status: 401 });
+    const { email, sub: appleUserId } = appleIdTokenPayload;
+
+    if (!appleUserId) {
+      return NextResponse.json({ error: 'Invalid ID token, missing user subject.' }, { status: 401 });
     }
 
-    const { email, sub: appleUserId } = appleIdTokenPayload;
     // Apple does not always provide a name in the ID token, so we might need to handle this.
     // For now, we'll use a generic name if not available.
     const name = appleIdTokenPayload.name || 'Apple User';
 
-    // Find or create the user in the database
+    // Find user by Apple User ID first.
     let user = await prisma.user.findUnique({
-      where: { email },
+      where: { appleUserId: appleUserId },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email,
-          name: name,
-          roles: ['user'], // Default role
-          appleUserId: appleUserId, // Store Apple's unique user ID
-        },
+      // No user with this Apple ID exists. It's a first-time Apple login.
+      // We MUST have an email to proceed.
+      if (!email) {
+        return NextResponse.json({ error: 'Email is not available from Apple. Please try signing in again.' }, { status: 400 });
+      }
+
+      // Check if an account with this email already exists.
+      user = await prisma.user.findUnique({
+        where: { email },
       });
-    } else if (!user.appleUserId) {
-      // If user exists but doesn't have appleUserId, link it
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { appleUserId: appleUserId },
-      });
+
+      if (user) {
+        // Email is already in use. Link this Apple ID to the existing account.
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { appleUserId: appleUserId },
+        });
+      } else {
+        // No existing account. Create a new one.
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name,
+            roles: ['user'], // Default role
+            appleUserId: appleUserId,
+          },
+        });
+      }
     }
 
     // Generate JWT tokens (accessToken and refreshToken)

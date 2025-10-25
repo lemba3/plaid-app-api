@@ -30,26 +30,41 @@ export async function POST(req: NextRequest) {
 
     const { email, name, sub: googleUserId } = payload;
 
-    // Find or create the user in the database
+    // Find user by Google User ID first.
     let user = await prisma.user.findUnique({
-      where: { email },
+      where: { googleUserId: googleUserId },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email,
-          name: name || 'User',
-          roles: ['user'], // Default role
-          googleUserId: googleUserId, // Store Google's unique user ID
-        },
+      // No user with this Google ID exists. It's a first-time Google login.
+      // We MUST have an email to proceed.
+      if (!email) {
+          // This is unlikely with Google Sign-In but good to have a check
+          return NextResponse.json({ error: 'Email not available from Google account.' }, { status: 400 });
+      }
+
+      // Check if an account with this email already exists.
+      user = await prisma.user.findUnique({
+        where: { email },
       });
-    } else if (!user.googleUserId) {
-      // If user exists but doesn't have googleUserId, link it
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleUserId: googleUserId },
-      });
+
+      if (user) {
+        // Email is already in use. Link this Google ID to the existing account.
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleUserId: googleUserId },
+        });
+      } else {
+        // No existing account. Create a new one.
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name || 'User',
+            roles: ['user'], // Default role
+            googleUserId: googleUserId,
+          },
+        });
+      }
     }
 
     // Generate JWT tokens (accessToken and refreshToken)

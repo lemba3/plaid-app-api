@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user.password) {
-      return NextResponse.json({ error: 'User has no password set' }, { status: 500 });
+      if (user.googleUserId) {
+        return NextResponse.json({ error: 'You have previously signed in with Google. Please use your Google account to sign in.' }, { status: 409 });
+      }
+      if (user.appleUserId) {
+        return NextResponse.json({ error: 'You have previously signed in with Apple. Please use your Apple account to sign in.' }, { status: 409 });
+      }
+      return NextResponse.json({ error: 'Your account has no password set. Please use social sign-in or reset your password.' }, { status: 400 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
