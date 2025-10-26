@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  console.log('exhange public token Authenticated user ID:', userId);
+  // console.log('exhange public token Authenticated user ID:', userId);
 
   try {
     const { public_token } = await req.json();

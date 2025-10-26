@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  console.log('Authenticated user ID:', userId);
+  // console.log('Authenticated user ID:', userId);
 
   try {
     const webhookUrl = `${process.env.PLAID_WEBHOOK_BASE_URL}/api/plaid/webhook?userId=${userId}`;
-    console.log('Plaid Webhook URL being sent:', webhookUrl); // Add this line
+    // console.log('Plaid Webhook URL being sent:', webhookUrl); // Add this line
 
     const redirectUri = `${process.env.NEXT_PUBLIC_API_URL}/plaid-redirect`;
 

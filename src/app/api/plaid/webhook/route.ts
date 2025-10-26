@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
           where: { itemId: item_id },
           data: { accessToken: encryptedAccessToken },
         });
-        console.log(`Access token updated for item: ${item_id} and user: ${userId}`);
+        // console.log(`Access token updated for item: ${item_id} and user: ${userId}`);
       } else {
         // If it doesn't exist, create a new one
         await prisma.plaidItem.create({
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
             },
           },
         });
-        console.log(`Access token saved for item: ${item_id} and user: ${userId}`);
+        // console.log(`Access token saved for item: ${item_id} and user: ${userId}`);
 
       }
 
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
             skipDuplicates: true,
           });
 
-          console.log(`Successfully created/updated accounts for item: ${item_id}`);
+          // console.log(`Successfully created/updated accounts for item: ${item_id}`);
 
           // Only trigger Pusher event if new accounts were actually created
           if (result.count > 0) {
