@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.purui.app",
+    "sha256_cert_fingerprints": ["06:33:EF:BE:AB:30:33:92:CA:EA:9A:3D:13:51:26:B5:F3:08:96:D1:7E:14:C4:83:F2:FF:DA:47:38:80:ED:5C"]
+  }
+}]

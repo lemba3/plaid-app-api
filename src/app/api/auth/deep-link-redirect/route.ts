@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Token is required', { status: 400 });
   }
 
-  const deepLink = `purui://reset-password?token=${token}`;
+  const deepLink = `${process.env.APP_SCHEME}://reset-password?token=${token}`;
 
   // This HTML page will attempt to redirect to the deep link.
   // If the app is not installed, the user will see a message.

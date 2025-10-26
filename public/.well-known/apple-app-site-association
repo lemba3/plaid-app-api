@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "BF5436GRAF.com.purui.app"
+        ],
+        "components": [
+          {
+            "/": "/plaid-redirect*",
+            "comment": "Matches the Plaid redirect path and any query parameters"
+          }
+        ]
+      }
+    ]
+  }
+}

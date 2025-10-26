@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/deep-link-redirect?token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/deep-link-redirect?token=${resetToken}`;
 
     const emailHtml = `
       <div style="font-family: sans-serif; text-align: center;">
